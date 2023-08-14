@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  This CloudFormation Template was written for
+  running Kittens Carousel Static Website on EC2.
+  Kittens Carousel Static Website will be
+  deployed on Amazon Linux 2
+  (ami-08a52ddb321b32a8c) EC2 Instance with
+  custom security group which allows http
+  connections on port 80 and ssh port 22 from
+  anywhere. Kittens Carousel Static Website
+  is downloaded from my Public Github repository,
+  then deployed on Apache Web Server.
+  
+Resources:
+  mySecGr:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: HTTP VE SSH # Required
+      GroupName: icardi
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  myEc2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-08a52ddb321b32a8c
+      InstanceType: t2.micro
+      KeyName: first.key
+      SecurityGroupIds: 
+        - !Ref mySecGr
+        
+      Tags: 
+        - Key: Name  
+          Value: !Sub Web Server of ${AWS::StackName}
+      UserData: 
+        Fn::Base64:
+          !Sub |
+            #! /bin/bash
+            yum update -y
+            yum install httpd -y
+            FOLDER="https:raw.githubusercontent.com/Numan2035/My_Proje/master/14-08-kediler/static-web/"
+            cd /var/www/html
+            wget $FOLDER/index.html
+            wget $FOLDER/cat0.jpg
+            wget $FOLDER/cat1.jpg
+            wget $FOLDER/cat2.jpg
+            wget $FOLDER/cat3.png
+            systemctl start httpd
+            systemctl enable httpd 
+   
+Outputs:
+  WebSiteURL:
+   Value: !Sub
+   - http://${PublicAddress}
+   - PublicAddress: !GetAtt myEc2.PublicDnsName 
